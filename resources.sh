@@ -2,7 +2,7 @@
 
 # Creates alternative Android bitmap drawables for different densities.
 # Base images:
-#  icon.png (192x192px)
+#  icon.png (512x512px)
 #  splash.png (1200x1200px centralized picture on a 2208x2208px frame)
 
 function print_fail() { printf "\e[0;31m[ FAIL ] %s\n\e[0m" "$1"; }
@@ -68,7 +68,7 @@ function create_splash() {
 }
 
 
-check_file $BASE_ICON '192x192' && print_info 'Generating icon...'
+check_file $BASE_ICON '512x512' && print_info 'Generating icon...'
 create_icon ldpi
 create_icon mdpi
 create_icon hdpi
