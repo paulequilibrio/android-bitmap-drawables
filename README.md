@@ -6,7 +6,7 @@ You just need two base images on a directory:
 - icon.png
 - splash.png
 
-The `icon.png` image shoud have 192x192px.
+The `icon.png` image shoud have 512x512px.
 
 The `splash.png` should contain a 1200x1200px picture centralized on a 2208x2208px frame.
 
