@@ -2,15 +2,36 @@
 
 Creates alternative Android bitmap drawables for different densities.
 
+## Usage
+
+```shell
+resources.sh [PATH_WITH_BASE_IMAGES]
+```
+
+You could use either absolute path or relative path.
+
+If you don't provide the path, it will use the current directory.
+
+## Using the example images
+
+Download this repository and run:
+
+```shell
+./resources.sh example
+```
+
+## Using your own images
+
 You just need two base images on a directory:
-- icon.png
-- splash.png
 
-The `icon.png` image shoud have 512x512px.
+- `icon.png`
+- `splash.png`
 
-The `splash.png` should contain a 1200x1200px picture centralized on a 2208x2208px frame.
+The `icon.png` should have `512x512`px.
 
-After run the `resources.sh` script you will have something like this:
+The `splash.png` should contain a `1200x1200`px picture centralized on a `2208x2208`px frame.
+
+Once you have these images, run the `resources.sh` script and you'll get something like this:
 
 ```
 ├── icon.png
@@ -37,3 +58,5 @@ After run the `resources.sh` script you will have something like this:
         ├── drawable-port-xxhdpi-screen.png
         └── drawable-port-xxxhdpi-screen.png
 ```
+
+## Enjoy it!
