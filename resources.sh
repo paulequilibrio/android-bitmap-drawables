@@ -22,9 +22,6 @@ BASE_SPLASH="${ABSPATH}/splash.png"
 ICONS_PATH="${ABSPATH}/android/icon"
 SPLASHES_PATH="${ABSPATH}/android/splash"
 
-mkdir -p "$ICONS_PATH"
-mkdir -p "$SPLASHES_PATH"
-
 
 check_file() {
   if [ ! -f "$1" ]; then
@@ -84,6 +81,7 @@ create_splash() {
 
 
 check_file "$BASE_ICON" '512x512' && print_info 'Generating icon...'
+mkdir -p "$ICONS_PATH"
 create_icon ldpi
 create_icon mdpi
 create_icon hdpi
@@ -92,6 +90,7 @@ create_icon xxhdpi
 create_icon xxxhdpi
 
 check_file "$BASE_SPLASH" '2208x2208' && print_info 'Generating splash...'
+mkdir -p "$SPLASHES_PATH"
 create_splash ldpi
 create_splash mdpi
 create_splash hdpi
