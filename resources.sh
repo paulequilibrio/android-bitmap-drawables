@@ -5,25 +5,26 @@
 #  icon.png (512x512px)
 #  splash.png (1200x1200px centralized picture on a 2208x2208px frame)
 
-print_fail() { printf "\e[0;31m[ FAIL ] %s\n\e[0m" "$1"; }
-print_info() { printf "\e[0;36m[ INFO ] %s\n\e[0m" "$1"; }
-print_ok()   { printf "\e[0;32m[  OK  ] %s\n\e[0m" "$1"; }
+print_fail () { printf "\e[0;31m[ FAIL ] %s\n\e[0m" "$1"; }
+print_info () { printf "\e[0;36m[ INFO ] %s\n\e[0m" "$1"; }
+print_ok ()   { printf "\e[0;32m[  OK  ] %s\n\e[0m" "$1"; }
 
-basepath="$1"
+SCRIPT_ABS_PATH="$(realpath "$0")"
+SCRIPT_ABS_DIR="$(dirname "$SCRIPT_ABS_PATH")"
+BASE_DIR="$1"
 
-if [ -d "$basepath" ]; then
-  ABSPATH="$(realpath "$basepath")"
+if [ -d "$BASE_DIR" ]; then
+  BASE_ABS_DIR="$(realpath "$BASE_DIR")"
 else
-  ABSPATH="$(realpath .)"
+  BASE_ABS_DIR="$(realpath .)"
 fi
 
-BASE_ICON="${ABSPATH}/icon.png"
-BASE_SPLASH="${ABSPATH}/splash.png"
-ICONS_PATH="${ABSPATH}/android/icon"
-SPLASHES_PATH="${ABSPATH}/android/splash"
+OUTPUT_ABS_DIR="${BASE_ABS_DIR}/res"
+BASE_ABS_ICON="${BASE_ABS_DIR}/icon.png"
+BASE_ABS_SPLASH="${BASE_ABS_DIR}/splash.png"
 
 
-check_file() {
+check_file () {
   if [ ! -f "$1" ]; then
     print_fail "not found: $1" && exit 1
   else
@@ -35,62 +36,118 @@ check_file() {
 }
 
 
-create_icon() {
-  case $1 in
-       ldpi )  SIZE='36x36'  ;;
-       mdpi )  SIZE='48x48'  ;;
-       hdpi )  SIZE='72x72'  ;;
-      xhdpi )  SIZE='96x96'  ;;
-     xxhdpi ) SIZE='144x144' ;;
-    xxxhdpi ) SIZE='192x192' ;;
-  esac
-
-  if convert "$BASE_ICON" -resize ${SIZE} "${ICONS_PATH}/drawable-$1-icon.png" 2> /dev/null ; then
-    print_ok "$1"
+create_mipmap () {
+  name="$1"
+  size="$2"
+  dirname="${OUTPUT_ABS_DIR}/mipmap-${name}"
+  mkdir -p "$dirname"
+  if convert "$BASE_ABS_ICON" -resize "$size" "${dirname}/ic_launcher.png" 2> /dev/null ; then
+    print_ok "$name"
   else
-    print_fail "$1"
+    print_fail "$name"
   fi
 }
 
 
-create_splash() {
-  case $1 in
-       ldpi )  WIDTH=320;  HEIGHT=240 ;;
-       mdpi )  WIDTH=480;  HEIGHT=320 ;;
-       hdpi )  WIDTH=800;  HEIGHT=480 ;;
-      xhdpi ) WIDTH=1280;  HEIGHT=720 ;;
-     xxhdpi ) WIDTH=1600;  HEIGHT=960 ;;
-    xxxhdpi ) WIDTH=1920; HEIGHT=1280 ;;
-  esac
+create_mipmap_v26 () {
+  name="$1"
+  size="$2"
+  bg_size="$3x$3"
+  base="${SCRIPT_ABS_DIR}/base"
+  back="ic_launcher_background.png"
+  fore="ic_launcher_foreground.png"
+  dirname="${OUTPUT_ABS_DIR}/mipmap-${name}-v26"
+  mkdir -p "$dirname"
+  cp "${base}/ic_launcher.xml" "${dirname}/ic_launcher.xml"
+  temp="${dirname}/temp.png"
 
-  PERCENTAGE=$(echo "scale=2; 100*${WIDTH}/2208" | bc)
-  OFFSET=$(( (WIDTH-HEIGHT)/2 ))
-
-  if convert "$BASE_SPLASH" -resize "${PERCENTAGE}%" -crop "${WIDTH}x${HEIGHT}+0+${OFFSET}" "${SPLASHES_PATH}/drawable-land-$1-screen.png" 2> /dev/null ; then
-    print_ok "$1 landscape"
+  if [ "$3" -lt 100 ]; then
+    convert "$BASE_ABS_ICON" -resize "48x48" "$temp"
+    base_back="${base}/t_${back}"
+    convert "${base}/${back}" -resize "${bg_size}" "${dirname}/$back"
   else
-    print_fail "$1 landscape"
+    convert "$BASE_ABS_ICON" -resize "192x192" "$temp"
+    base_back="${base}/x_${back}"
+    convert "$base_back" -resize "${bg_size}" "${dirname}/$back"
   fi
 
-  if convert "$BASE_SPLASH" -resize "${PERCENTAGE}%" -crop "${HEIGHT}x${WIDTH}+${OFFSET}+0" "${SPLASHES_PATH}/drawable-port-$1-screen.png" 2> /dev/null ; then
-    print_ok "$1 portrait"
+  if composite -gravity center "$temp" "$base_back" "${dirname}/$fore" \
+  && convert "${dirname}/$fore" -resize "${bg_size}" "${dirname}/$fore"
+  then
+    print_ok "${name}-v26"
   else
-    print_fail "$1 portrait"
+    print_fail "${name}-v26"
+  fi
+
+  rm "$temp"
+}
+
+
+create_ic_launcher () {
+  name="$1"
+  case $name in
+       ldpi ) size='36x36'   ; bg_size='36' ;;
+       mdpi ) size='48x48'   ; bg_size='48' ;;
+       hdpi ) size='72x72'   ; bg_size='72' ;;
+      xhdpi ) size='96x96'   ; bg_size='216' ;;
+     xxhdpi ) size='144x144' ; bg_size='324' ;;
+    xxxhdpi ) size='192x192' ; bg_size='432' ;;
+  esac
+
+  create_mipmap "$name" "$size"
+  create_mipmap_v26  "$name" "$size" "$bg_size"
+}
+
+
+get_drawable_path () {
+  orientation="$1"
+  name="$2"
+  dirname="${OUTPUT_ABS_DIR}/drawable-${orientation}-${name}"
+  mkdir -p "$dirname"
+  echo "${dirname}/screen.png"
+}
+
+create_splash () {
+  name="$1"
+  case $name in
+       ldpi )  width=320;  height=200 ;;
+       mdpi )  width=480;  height=320 ;;
+       hdpi )  width=800;  height=480 ;;
+      xhdpi ) width=1280;  height=720 ;;
+     xxhdpi ) width=1600;  height=960 ;;
+    xxxhdpi ) width=1920; height=1280 ;;
+  esac
+
+  percentage=$(echo "scale=2; 100*${width}/2208" | bc)
+  offset=$(( (width-height)/2 ))
+  land="$(get_drawable_path 'land' "$name")"
+  port="$(get_drawable_path 'port' "$name")"
+
+  if convert "$BASE_ABS_SPLASH" -resize "${percentage}%" -crop "${width}x${height}+0+${offset}" "$land" 2> /dev/null
+  then
+    print_ok "$name landscape"
+  else
+    print_fail "$name landscape"
+  fi
+
+  if convert "$BASE_ABS_SPLASH" -resize "${percentage}%" -crop "${height}x${width}+${offset}+0" "$port" 2> /dev/null
+  then
+    print_ok "$name portrait"
+  else
+    print_fail "$name portrait"
   fi
 }
 
 
-check_file "$BASE_ICON" '512x512' && print_info 'Generating icon...'
-mkdir -p "$ICONS_PATH"
-create_icon ldpi
-create_icon mdpi
-create_icon hdpi
-create_icon xhdpi
-create_icon xxhdpi
-create_icon xxxhdpi
+check_file "$BASE_ABS_ICON" '512x512' && print_info 'Generating icon...'
+create_ic_launcher ldpi
+create_ic_launcher mdpi
+create_ic_launcher hdpi
+create_ic_launcher xhdpi
+create_ic_launcher xxhdpi
+create_ic_launcher xxxhdpi
 
-check_file "$BASE_SPLASH" '2208x2208' && print_info 'Generating splash...'
-mkdir -p "$SPLASHES_PATH"
+check_file "$BASE_ABS_SPLASH" '2208x2208' && print_info 'Generating splash...'
 create_splash ldpi
 create_splash mdpi
 create_splash hdpi
